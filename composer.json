@@ -1,0 +1,32 @@
+{
+    "name": "umobi/nfse-php",
+    "description": "API para geração e comunicação de RPS e NFSe no padão AMTEC Goiania.",
+    "keywords": ["nfe","nfse","sped","nfephp"],
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Ramon Vicente",
+            "email": "ramon@umobi.com.br"
+        }
+    ],
+    "type": "library",
+    "require": {
+        "php": "^7.1.3",
+        "nfephp-org/sped-common" : "dev-signer-xpath"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^7.5"
+    },
+    "autoload": {
+        "psr-4": {
+            "Umobi\\NFSe\\": "src/"
+        }
+    },
+
+    "repositories": [
+        {
+            "type": "vcs",
+            "url": "https://bitbucket.org/umobi/sped-common.git"
+        }
+    ]
+}
