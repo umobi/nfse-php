@@ -28,7 +28,7 @@
     "repositories": [
         {
             "type": "vcs",
-            "url": "https://bitbucket.org/umobi/sped-common.git"
+            "url": "https://github.com/umobi/sped-common.git"
         }
     ]
 }
