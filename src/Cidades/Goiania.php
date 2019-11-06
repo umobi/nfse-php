@@ -4,6 +4,7 @@ namespace Umobi\NFSe\Cidades;
 
 use NFePHP\Common\DOMImproved;
 use NFePHP\Common\Soap\SoapCurl;
+use Umobi\NFSe\Exception\BadResponseException;
 use Umobi\NFSe\Rps;
 
 class Goiania extends AbstractCity
@@ -30,11 +31,18 @@ class Goiania extends AbstractCity
 
     public function gerarNfse($client, $xmlSigned)
     {
-
         $operation = "GerarNfse";
         $content = "<{$operation}Envio xmlns=\"{$this->messageNamespace}\">" . $xmlSigned . "</{$operation}Envio>";
 
-        return $this->send($client, $content, $operation);
+        $response = $this->send($client, $content, $operation);
+        $xml = simplexml_load_string($response);
+
+        if (!$xml->ListaNfse || $xml->ListaMensagemRetorno->MensagemRetorno->Codigo != "L000") {
+            $message = $xml->ListaMensagemRetorno->MensagemRetorno->Mensagem ?? "Erro ao tentar gerar nota.";
+            throw new BadResponseException($message, $xml);
+        }
+
+        return $response;
     }
 
     public function getNFSeLink($nota, $verificador, $inscricao)
