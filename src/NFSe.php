@@ -34,6 +34,8 @@ class NFSe {
 
         if ($client == null || !$client instanceof SoapInterface) {
             $this->client = new SoapCurl($this->certificate);
+            if (isset($config['client_timeout']))
+                $this->client->timeout((int)$config['client_timeout']);
             $this->client->disableCertValidation();
         } else {
             $this->client = $client;
