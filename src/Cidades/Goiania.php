@@ -29,12 +29,27 @@ class Goiania extends AbstractCity
         $this->rpsDoc = $this->dom->createElement('Rps');
     }
 
+    public function consultarNfse($client, $content)
+    {
+        $operation = "ConsultarNfseRps";
+        $response = $this->send($client, $content, $operation);
+        $xml = simplexml_load_string($response);
+
+        if (!$xml->ListaNfse || $xml->ListaMensagemRetorno->MensagemRetorno->Codigo != "L000") {
+            $message = $xml->ListaMensagemRetorno->MensagemRetorno->Mensagem ?? "Erro ao tentar gerar nota.";
+            throw new BadResponseException($message, $xml);
+        }
+
+        return $response;
+    }
+
     public function gerarNfse($client, $xmlSigned)
     {
         $operation = "GerarNfse";
         $content = "<{$operation}Envio xmlns=\"{$this->messageNamespace}\">" . $xmlSigned . "</{$operation}Envio>";
 
         $response = $this->send($client, $content, $operation);
+
         $xml = simplexml_load_string($response);
 
         if (!$xml->ListaNfse || $xml->ListaMensagemRetorno->MensagemRetorno->Codigo != "L000") {
@@ -143,6 +158,46 @@ class Goiania extends AbstractCity
         }
     }
 
+    public function renderConsultaDom(Rps $rps, $config = null): DOMImproved
+    {
+        $dom = new DOMImproved('1.0', 'UTF-8');
+        $dom->preserveWhiteSpace = false;
+        $dom->formatOutput = false;
+
+        $parent = $dom->createElement('ConsultarNfseRpsEnvio');
+        $att = $dom->createAttribute('xmlns');
+        $att->value = 'http://nfse.goiania.go.gov.br/xsd/nfse_gyn_v02.xsd';
+        $parent->appendChild($att);
+
+        $nfSerie = isset($config['dry_run']) && $config['dry_run'] ? "TESTE": $rps->identificacaoRpsSerie;
+
+        $node = $dom->createElement('IdentificacaoRps');
+        $dom->addChild(
+            $node,
+            "Numero",
+            $rps->identificacaoRpsNumero,
+            true
+        );
+        $dom->addChild(
+            $node,
+            "Serie",
+            $nfSerie,
+            true
+        );
+        $dom->addChild(
+            $node,
+            "Tipo",
+            $rps->identificacaoRpsTipo,
+            true
+        );
+        $parent->appendChild($node);
+
+        $dom->appendChild($parent);
+
+        $this->addPrestador($dom, $parent, $rps, $config);
+        return $dom;
+    }
+
     public function renderDom(Rps $rps, $config = null): DOMImproved
     {
         $infRps = $this->dom->createElement('InfDeclaracaoPrestacaoServico');
@@ -174,7 +229,7 @@ class Goiania extends AbstractCity
         $this->addServico($infRps, $rps);
 
         if (isset($config) && is_array($config)) {
-            $this->addPrestador($infRps, $rps, $config);
+            $this->addPrestador($this->dom, $infRps, $rps, $config);
         }
         $this->addTomador($infRps, $rps);
 
@@ -316,21 +371,21 @@ class Goiania extends AbstractCity
         $parent->appendChild($node);
     }
 
-    protected function addPrestador(&$parent, Rps $rps, $config)
+    protected function addPrestador(&$dom, &$parent, Rps $rps, $config)
     {
 
-        $node = $this->dom->createElement('Prestador');
-        $cpfcnpj = $this->dom->createElement('CpfCnpj');
+        $node = $dom->createElement('Prestador');
+        $cpfcnpj = $dom->createElement('CpfCnpj');
 
         if (isset($config['cnpj']) && !empty($config['cnpj'])) {
-            $this->dom->addChild(
+            $dom->addChild(
                 $cpfcnpj,
                 "Cnpj",
                 $config['cnpj'],
                 true
             );
         } else {
-            $this->dom->addChild(
+            $dom->addChild(
                 $cpfcnpj,
                 "Cpf",
                 $config['cpf'],
@@ -338,7 +393,7 @@ class Goiania extends AbstractCity
             );
         }
         $node->appendChild($cpfcnpj);
-        $this->dom->addChild(
+        $dom->addChild(
             $node,
             "InscricaoMunicipal",
             $config['im'],

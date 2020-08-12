@@ -101,11 +101,23 @@ class NFSe {
 
     public function gerarNfse(Rps $rps)
     {
+        $this->client->disableCertValidation();
         $dom = $this->city->renderDom($rps, $this->config);
         $xmlsigned = $this->sign($dom->saveXML());
 
         return $this->city->gerarNfse($this->client, $xmlsigned);
     }
+
+    public function consultarNfse(Rps $rps)
+    {
+        $this->client->disableCertValidation(false);
+        $dom = $this->city->renderConsultaDom($rps, $this->config);
+
+
+        return $this->city->consultarNfse($this->client, $dom->saveXML());
+    }
+
+
 
     public function getNFSeHtml($nota, $verificador)
     {
